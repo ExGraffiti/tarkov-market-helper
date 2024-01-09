@@ -8,23 +8,25 @@ from items import Items
 
 
 class MainFrame(wx.Frame):
-    def __init__(self, hash_lang, fps):
+    def __init__(self, fps, API_KEY, screen_width, screen_height):
         """
         Init of MainFrame that show item price when mouse is pointing on an item
 
         Arguments:
-        hash_lang -- chosen lang of game client
         fps -- how often will be updated MainFrame
         """
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+
         # Set style and options of Frame
         style = (wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR | wx.SIMPLE_BORDER)
-        super().__init__(None, title='Tarkov Market Helper', size=(92, 76), style=style)
+        super().__init__(None, title='Tarkov Market Helper', size=(126, 82), style=style)
         self.panel = wx.Panel(self)
         self.SetTransparent(220)
         self.SetBackgroundColour('black')
 
         # Items init with chosen lang
-        self.items = Items(hash_lang)
+        self.items = Items(API_KEY)
 
         # Remember prev item hash to compare with current item hash (for optimization)
         self.previous_item_hash = ''
@@ -38,6 +40,7 @@ class MainFrame(wx.Frame):
 
         # Init UI
         self.min_price_text = None
+        self.price_text = None
         self.slot_price_text = None
         self.trader_price_text = None
         self.init_ui()
@@ -78,12 +81,11 @@ class MainFrame(wx.Frame):
         self.scan_item()
 
         # Update item info in UI
-        if not self.item.empty and self.item_state == "Item data found" \
-                and self.previous_item_hash != self.item[f"Hash {self.items.hash_lang}"].iloc[0]:
-            self.previous_item_hash = self.item[f"Hash {self.items.hash_lang}"].iloc[0]
+        if self.item and self.item_state == True:
+
             self.update_ui()
 
-        elif self.item.empty and self.item_state == "Item data not found" \
+        elif not self.item and self.item_state == "Item data not found" \
                 and self.previous_item_hash != "":
             self.previous_item_hash = ""
             self.update_ui()
@@ -93,29 +95,36 @@ class MainFrame(wx.Frame):
         Init UI when app start
         """
         hbox = wx.BoxSizer()
-        fb = wx.FlexGridSizer(3, 2, 6, 4)
+        fb = wx.FlexGridSizer(4, 2, 1, 4)
 
-        min_price_title = wx.StaticText(self.panel, size=(12, 16), label='m', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        min_price_title = wx.StaticText(self.panel, size=(12, 16), label='N:', style=wx.ALIGN_CENTRE_HORIZONTAL)
         min_price_title.SetForegroundColour((160, 160, 170))
 
-        self.min_price_text = wx.StaticText(self.panel, label=f'₽ N/A')
+        self.min_price_text = wx.StaticText(self.panel, label=f'None')
         self.min_price_text.SetForegroundColour((240, 226, 42))
 
-        slot_price_title = wx.StaticText(self.panel, size=(12, 16), label='s', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        price_title = wx.StaticText(self.panel, size=(12, 16), label='P:', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        price_title.SetForegroundColour((160, 160, 170))
+
+        self.price_text = wx.StaticText(self.panel, label=f'N/A')
+        self.price_text.SetForegroundColour((240, 226, 42))
+
+        slot_price_title = wx.StaticText(self.panel, size=(12, 16), label='S:', style=wx.ALIGN_CENTRE_HORIZONTAL)
         slot_price_title.SetForegroundColour((160, 160, 170))
 
-        self.slot_price_text = wx.StaticText(self.panel, label=f'₽ N/A')
+        self.slot_price_text = wx.StaticText(self.panel, label=f'N/A')
         self.slot_price_text.SetForegroundColour((240, 226, 42))
 
-        trader_price_title = wx.StaticText(self.panel, size=(12, 16), label='t', style=wx.ALIGN_CENTRE_HORIZONTAL)
-        trader_price_title.SetForegroundColour((160, 160, 170))
+        trader_price_title_ = wx.StaticText(self.panel, size=(12, 16), label='T:', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        trader_price_title_.SetForegroundColour((160, 160, 170))
 
-        self.trader_price_text = wx.StaticText(self.panel, label=f'₽ N/A')
+        self.trader_price_text = wx.StaticText(self.panel, label=f'N/A')
         self.trader_price_text.SetForegroundColour((240, 226, 42))
 
         fb.AddMany([min_price_title, self.min_price_text,
+                    price_title, self.price_text,
                     slot_price_title, self.slot_price_text,
-                    trader_price_title, self.trader_price_text,
+                    trader_price_title_, self.trader_price_text,
                     ])
 
         hbox.Add(fb, proportion=1, flag=wx.EXPAND | wx.ALL, border=6)
@@ -126,13 +135,15 @@ class MainFrame(wx.Frame):
         """
         Update UI when thread looping
         """
-        if self.item_state == 'Item data found':
-            self.min_price_text.SetLabel(f"₽{self.item['Lowest price'].iloc[0]}")
-            self.slot_price_text.SetLabel(f"₽{self.item['Price per slot'].iloc[0]}")
-            self.trader_price_text.SetLabel(f"₽{self.item['Trader price'].iloc[0]}")
+        if self.item_state == True:
+            self.min_price_text.SetLabel(f"{self.item['name']}")
+            self.price_text.SetLabel(f"₽{self.item['avg']}")
+            self.slot_price_text.SetLabel(f"₽{self.item['avg_per_slot']}")
+            self.trader_price_text.SetLabel(f"₽{self.item['trader']}")
 
-        elif self.item_state == 'Item data not found':
-            self.min_price_text.SetLabel('N/A')
+        elif self.item_state == False:
+            self.min_price_text.SetLabel('None')
+            self.price_text.SetLabel('N/A')
             self.slot_price_text.SetLabel('N/A')
             self.trader_price_text.SetLabel('N/A')
 
@@ -141,16 +152,17 @@ class MainFrame(wx.Frame):
         Scan item when thread looping and set item_hash, item_state
         """
         try:
-            self.item, self.item_state = self.items.find(Scan().item_hash)
+            self.item, self.item_state, show = self.items.find(Scan(self.screen_width, self.screen_height).item_hash)
 
         except AttributeError as error:
             print(error)
             self.item, self.item_state = self.items.find('')
+            show = False
 
-        if not self.item.empty and self.item_state == 'Item data found' and self.thread_is_on:
+        if self.item and self.item_state == True and show == True:
             self.Show(True)
 
-        elif self.item.empty and self.item_state == 'Item data not found' and self.thread_is_on:
+        elif self.item and self.item_state == False and show == True:
             self.Show(True)
 
         else:
@@ -160,4 +172,5 @@ class MainFrame(wx.Frame):
         """
         Used for debug purpose
         """
-        print(f'Debug Hash: {self.item_state}: {Scan().item_hash}')
+        # print(f'Debug Hash: {self.item_state}: {Scan().item_hash}')
+        ...

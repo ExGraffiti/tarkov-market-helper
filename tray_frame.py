@@ -2,13 +2,13 @@ import wx
 
 
 class TrayFrame(wx.Frame):
-    def __init__(self, position, hotkey_help, hotkey_scan, hotkey_exit):
+    def __init__(self, position, hotkey_help, hotkey_scan, hotkey_exit, screen_width):
         """
         TrayFrame is helping user to see the state of the application and view hotkeys
         """
         # Set style and options of Frame
         style = (wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR | wx.BORDER_NONE)
-        super().__init__(None, title='Tarkov Market Helper Tray', size=(50, 20), style=style)
+        super().__init__(None, title='Tarkov Market Helper Tray', size=(55, 20), style=style)
         self.panel = wx.Panel(self)
         self.SetTransparent(220)
         self.SetBackgroundColour('black')
@@ -33,12 +33,14 @@ class TrayFrame(wx.Frame):
         self.scan_text = None
         self.exit_title = None
         self.exit_text = None
-        self.m_title = None
-        self.m_text = None
-        self.s_title = None
-        self.s_text = None
-        self.t_title = None
-        self.t_text = None
+        self.name_title = None
+        self.name_text = None
+        self.price_title = None
+        self.price_text = None
+        self.slot_title = None
+        self.slot_text = None
+        self.traider_title = None
+        self.traider_text = None
         self.init_ui()
 
         # Show App
@@ -49,47 +51,53 @@ class TrayFrame(wx.Frame):
         Init UI when app start
         """
         hbox = wx.BoxSizer()
-        fb = wx.FlexGridSizer(7, 2, 4, 6)
+        fb = wx.FlexGridSizer(8, 2, 1, 7)
 
-        self.title = wx.StaticText(self.panel, label='TMH')
+        self.title = wx.StaticText(self.panel, label='SCAN')
         self.title.SetForegroundColour((160, 160, 170))
         self.hotkeys = wx.StaticText(self.panel, label=f'{self.hotkey_help}')
         self.hotkeys.SetForegroundColour((160, 160, 170))
 
-        self.scan_title = wx.StaticText(self.panel, size=(26, 16), label=f'{self.hotkey_scan}',
+        self.scan_title = wx.StaticText(self.panel, size=(16, 16), label=f'{self.hotkey_scan}',
                                         style=wx.ALIGN_CENTRE_HORIZONTAL)
         self.scan_title.SetForegroundColour((160, 160, 170))
         self.scan_text = wx.StaticText(self.panel, label='Activate scan')
         self.scan_text.SetForegroundColour((160, 160, 170))
 
-        self.exit_title = wx.StaticText(self.panel, size=(26, 16), label=f'{self.hotkey_exit}',
+        self.exit_title = wx.StaticText(self.panel, size=(16, 16), label=f'{self.hotkey_exit}',
                                         style=wx.ALIGN_CENTRE_HORIZONTAL)
         self.exit_title.SetForegroundColour((160, 160, 170))
         self.exit_text = wx.StaticText(self.panel, label='Close app')
         self.exit_text.SetForegroundColour((160, 160, 170))
 
-        self.m_title = wx.StaticText(self.panel, size=(26, 16), label='m', style=wx.ALIGN_CENTRE_HORIZONTAL)
-        self.m_title.SetForegroundColour((160, 160, 170))
-        self.m_text = wx.StaticText(self.panel, label='Avg min price')
-        self.m_text.SetForegroundColour((160, 160, 170))
+        self.name_title = wx.StaticText(self.panel, size=(16, 16), label='N', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        self.name_title.SetForegroundColour((160, 160, 170))
+        self.name_text = wx.StaticText(self.panel, label='Name')
+        self.name_text.SetForegroundColour((160, 160, 170))
 
-        self.s_title = wx.StaticText(self.panel, size=(26, 16), label='s', style=wx.ALIGN_CENTRE_HORIZONTAL)
-        self.s_title.SetForegroundColour((160, 160, 170))
-        self.s_text = wx.StaticText(self.panel, label='Per slot price')
-        self.s_text.SetForegroundColour((160, 160, 170))
+        self.price_title = wx.StaticText(self.panel, size=(16, 16), label='P', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        self.price_title.SetForegroundColour((160, 160, 170))
+        self.price_text = wx.StaticText(self.panel, label='Price')
+        self.price_text.SetForegroundColour((160, 160, 170))
 
-        self.t_title = wx.StaticText(self.panel, size=(26, 16), label='t', style=wx.ALIGN_CENTRE_HORIZONTAL)
-        self.t_title.SetForegroundColour((160, 160, 170))
-        self.t_text = wx.StaticText(self.panel, label='Trader price')
-        self.t_text.SetForegroundColour((160, 160, 170))
+        self.slot_title = wx.StaticText(self.panel, size=(16, 16), label='S', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        self.slot_title.SetForegroundColour((160, 160, 170))
+        self.slot_text = wx.StaticText(self.panel, label='Per slot price')
+        self.slot_text.SetForegroundColour((160, 160, 170))
+
+        self.traider_title = wx.StaticText(self.panel, size=(16, 16), label='T', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        self.traider_title.SetForegroundColour((160, 160, 170))
+        self.traider_text = wx.StaticText(self.panel, label='Trader price')
+        self.traider_text.SetForegroundColour((160, 160, 170))
 
         fb.AddMany([self.title, self.hotkeys,
                     self.scan_title, self.scan_text,
                     self.exit_title, self.exit_text,
                     (6, 6), (6, 6),
-                    self.m_title, self.m_text,
-                    self.s_title, self.s_text,
-                    self.t_title, self.t_text
+                    self.name_title, self.name_text,
+                    self.price_title, self.price_text,
+                    self.slot_title, self.slot_text,
+                    self.traider_title, self.traider_text
                     ])
 
         hbox.Add(fb, proportion=1, flag=wx.EXPAND | wx.ALL, border=2)
@@ -104,10 +112,10 @@ class TrayFrame(wx.Frame):
             self.Move(wx.Point(0, 0))
 
         elif position == 'center':
-            self.Move(wx.Point(int((1920 - self.Size.GetWidth()) / 2), 0))
+            self.Move(wx.Point(int((self.screen_width - self.Size.GetWidth()) / 2), 0))
 
         elif position == 'right':
-            self.Move(wx.Point(1920 - self.Size.GetWidth(), 0))
+            self.Move(wx.Point(self.screen_width - self.Size.GetWidth(), 0))
 
     def turn_active(self):
         """
