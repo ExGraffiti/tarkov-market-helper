@@ -166,8 +166,9 @@ class Scan:
         name = name.replace('х59', 'x39')
         name = name.replace('28-round', '20-round')
         name = name.replace('KIASS', 'KlASS')
+        name = name.replace('Seav', 'Scav')
 
-        return name
+        return name.lower()
 
 
     def hash_item_image(self):

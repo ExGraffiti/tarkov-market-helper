@@ -28,7 +28,7 @@ class Items:
         response = response.json()
 
         for row in response:
-            self.items_data[row['name']] = {
+            self.items_data[row['name'].lower()] = {
                 'name': row['name'],
                 'avg': row['avg24hPrice'],
                 'avg_per_slot': int(round(int(row['avg24hPrice']) / int(row['slots']), 0)),
